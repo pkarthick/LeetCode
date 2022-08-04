@@ -1,11 +1,14 @@
+#[allow(dead_code)]
 struct Solution {}
 
+#[allow(dead_code)]
 struct BackSpacer {
     s: String,
     i: usize,
     cur: Option<char>,
 }
 
+#[allow(dead_code)]
 impl BackSpacer {
     fn new(s: String) -> BackSpacer {
         let i = s.len() - 1;
@@ -41,6 +44,32 @@ impl BackSpacer {
     }
 }
 
+enum Index {
+    OutOfRange,
+    InRange(usize),
+}
+
+impl Index {
+    fn new(s: &str) -> Self {
+        if s.len() == 0 {
+            Index::OutOfRange
+        } else {
+            Index::InRange(s.len() - 1)
+        }
+    }
+
+    fn is_in_range(&self) -> bool {
+
+        match self {
+            Index::OutOfRange => false,
+            Index::InRange(_) => true,
+        }
+
+    }
+
+}
+
+#[allow(dead_code)]
 impl Solution {
     pub fn backspace_compare_struct(s: String, t: String) -> bool {
         let mut bs1 = BackSpacer::new(s);
@@ -68,84 +97,61 @@ impl Solution {
         }
     }
 
-    
-
     pub fn backspace_compare(s: String, t: String) -> bool {
 
-        fn get_char(s: &str, i: Option<usize>) -> Option<char> {
-            if i.is_some() {
-                s.chars().nth(i.unwrap())
-            } else {
-                None
+        fn get_char(s: &str, i: &Index) -> Option<char> {
+            match i {
+                Index::InRange(x) => s.chars().nth(*x),
+                Index::OutOfRange => None
             }
         }
 
-        fn decrement_index(i: Option<usize>) -> Option<usize> {
-            if let Some(x) = i {
-                if x == 0 {
-                    None
-                } else {
-                    Some(x - 1)
-                }
-            } else {
-                None
-            }
+        fn decrement_index(i: &mut Index) {
+            *i = match *i {
+                Index::OutOfRange => Index::OutOfRange,
+                Index::InRange(x) => if x == 0_usize {Index::OutOfRange} else { Index::InRange(x - 1) }
+            };
         }
 
-        fn apply_backspaces(s: &str, i: Option<usize>) -> Option<usize> {
-        
+        fn apply_backspaces(s: &str, i: &mut Index) {
             let mut c = 0;
-            let mut i = i;
-    
+
             let mut sc = get_char(s, i);
-    
-            while i.is_some() && (sc == Some('#') || c > 0) {
-    
+
+            while i.is_in_range() && (sc == Some('#') || c > 0) {
                 match sc {
                     Some('#') => c += 1,
                     _ => c -= 1,
                 }
 
-                i = decrement_index(i);
+                decrement_index(i);
                 sc = get_char(s, i);
-    
-            }
-    
-            i
-    
-        }
-
-        fn get_index(s: &str) -> Option<usize> {
-            if s.len() == 0 {
-                None
-            } else {
-                Some(s.len() - 1)
             }
         }
 
-        let mut si = get_index(&s);
-        let mut ti = get_index(&t);
+
+        let mut si = Index::new(&s);
+        let mut ti = Index::new(&t);
 
         loop {
-            if si.is_none() && ti.is_none() {
+            if !si.is_in_range() && !ti.is_in_range() {
                 return true;
             } else {
-                let sc = get_char(&s, si);
-                let tc = get_char(&t, ti);
+                let sc = get_char(&s, &si);
+                let tc = get_char(&t, &ti);
 
                 if sc != Some('#') && tc != Some('#') {
                     if sc != tc {
                         return false;
                     }
 
-                    si = decrement_index(si);
-                    ti = decrement_index(ti);
-                    
+                    decrement_index(&mut si);
+                    decrement_index(&mut ti);
                 } else {
-                    si = apply_backspaces(&s, si);
-                    ti = apply_backspaces(&t, ti);
+                    apply_backspaces(&s, &mut si);
+                    apply_backspaces(&t, &mut ti);
 
-                    if (si.is_none() && ti.is_some()) || (ti.is_none() && si.is_some()) {
+                    if (!si.is_in_range() && ti.is_in_range()) || (!ti.is_in_range() && si.is_in_range()) {
                         return false;
                     }
                 }
